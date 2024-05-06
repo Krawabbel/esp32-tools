@@ -1,0 +1,7 @@
+#ifndef WIFI_ACCESS_HPP
+#define WIFI_ACCESS_HPP
+
+const char *SSID = "your wireless network SSID";
+const char *PASS = "your wireless network password";
+
+#endif
