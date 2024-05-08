@@ -7,12 +7,14 @@
 
 enum class Event : byte
 {
-    SDA_RISE,
-    SDA_FALL,
-    SCL_RISE,
-    SCL_FALL,
+    START,
+    BIT_LOW,
+    BIT_HIGH,
+    STOP,
     NO_EVENT,
 };
+
+String event_str(Event event);
 
 class History
 {
@@ -24,6 +26,8 @@ public:
     size_t length() volatile const;
 
     Event read(size_t id) volatile const;
+
+    String dump() volatile const;
 
 private:
     Event events[HISTORY_CAPACITY];

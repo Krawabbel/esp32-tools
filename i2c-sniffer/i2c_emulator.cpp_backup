@@ -113,23 +113,6 @@ Signal Emulator::transition(Event event)
     }
 }
 
-static String event_str(Event event)
-{
-    switch (event)
-    {
-    case Event::SDA_FALL:
-        return "-";
-    case Event::SDA_RISE:
-        return "+";
-    case Event::SCL_FALL:
-        return "\\";
-    case Event::SCL_RISE:
-        return "/";
-    case Event::NO_EVENT:
-        return "?";
-    }
-}
-
 String Emulator::event_log() const
 {
     String log = "";

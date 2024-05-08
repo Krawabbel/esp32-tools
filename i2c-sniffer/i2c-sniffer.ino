@@ -1,7 +1,7 @@
 #include <Wire.h>
 #include <WiFi.h>
 
-#include "i2c_emulator.hpp"
+// #include "i2c_emulator.hpp"
 #include "i2c_history.hpp"
 #include "wifi_access.hpp"
 
@@ -11,18 +11,22 @@ constexpr uint8_t pin_sda = 21;
 volatile History history;
 WiFiClient client;
 
-void scl_interrupt_on_change()
+void scl_interrupt_on_rise()
 {
-    const byte scl = digitalRead(pin_scl);
-    const Event event = scl == HIGH ? Event::SCL_RISE : Event::SCL_FALL;
+    byte sda = digitalRead(pin_sda);
+    const Event event = sda == HIGH ? Event::BIT_HIGH : Event::BIT_LOW;
     history.write(event);
 }
 
 void sda_interrupt_on_change()
 {
-    const byte sda = digitalRead(pin_sda);
-    const Event event = sda == HIGH ? Event::SDA_RISE : Event::SDA_FALL;
-    history.write(event);
+    const byte scl = digitalRead(pin_scl);
+    if (scl == HIGH)
+    {
+        const byte sda = digitalRead(pin_sda);
+        const Event event = sda == HIGH ? Event::STOP : Event::START;
+        history.write(event);
+    }
 }
 
 void connect_server()
@@ -64,11 +68,13 @@ void setup()
 
 void listen()
 {
+    history.reset();
+
     connect_server();
     client.println();
     client.print("Sniffing");
 
-    attachInterrupt(digitalPinToInterrupt(pin_scl), scl_interrupt_on_change, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(pin_scl), scl_interrupt_on_rise, RISING);
     attachInterrupt(digitalPinToInterrupt(pin_sda), sda_interrupt_on_change, CHANGE);
 
     while (history.is_writable())
@@ -85,17 +91,19 @@ void listen()
 
 void replay()
 {
-    Emulator emu(&history);
-    for (int frame = 0; emu.next(); frame++)
-    {
-        connect_server();
-        client.printf("\nFrame %i: %30s >> %40s >> %10s %5s %s", frame, emu.event_log().c_str(), emu.signal_log().c_str(), emu.data_log().c_str(), emu.ack_log().c_str(), emu.add_log().c_str());
-    }
+    connect_server();
+    client.printf("\n%s\n", history.dump().c_str());
+
+    // Emulator emu(&history);
+    // for (int frame = 0; emu.next(); frame++)
+    // {
+    //     connect_server();
+    //     client.printf("\nFrame %i: %30s >> %40s >> %10s %5s %s", frame, emu.event_log().c_str(), emu.signal_log().c_str(), emu.data_log().c_str(), emu.ack_log().c_str(), emu.add_log().c_str());
+    // }
 }
 
 void loop()
 {
-    history.reset();
     listen();
     replay();
     delay(5000);
